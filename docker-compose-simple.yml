@@ -1,5 +1,3 @@
-version: "3.8"
-
 # Simple single-instance setup
 # For multi-host HA setup, use docker-compose.yml instead
 
