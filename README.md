@@ -229,6 +229,10 @@ from(bucket: "api-metrics")
   |> aggregateWindow(every: 1m, fn: sum)
 ```
 
+Or you can take the easy route, and import the pre-made dashboard `grafana-dashboard.json` in this repository.
+
+![Grafana Dashboard Preview](grafana-dashboard-preview.png)
+
 ## Metrics Collected
 
 The middleware automatically tracks:
