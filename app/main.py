@@ -1,4 +1,5 @@
 import os
+import random
 from fastapi import FastAPI
 from app.middleware.metrics import MetricsMiddleware
 import logging
@@ -85,7 +86,8 @@ async def slow_endpoint():
     """Example slow endpoint to test metrics"""
     import asyncio
 
-    await asyncio.sleep(2)
+    delay = random.uniform(0.75, 2.0)
+    await asyncio.sleep(delay)
     return {"message": "This was slow", "hostname": HOSTNAME}
 
 

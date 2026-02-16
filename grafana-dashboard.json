@@ -365,6 +365,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
+            "axisGridShow": true,
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
@@ -378,21 +379,26 @@
             },
             "insertNulls": false,
             "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
             "lineWidth": 2,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
-            "showPoints": "never",
+            "showPoints": "auto",
             "spanNulls": false,
             "stacking": {
               "group": "A",
               "mode": "none"
             },
             "thresholdsStyle": {
-              "mode": "off"
+              "mode": "dashed"
             }
           },
+          "displayName": "${__field.labels.stat}   ${__field.labels.method} ${__field.labels.route} - ${__field.labels.hostname}",
+          "fieldMinMax": false,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -400,6 +406,14 @@
               {
                 "color": "green",
                 "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 0.5
+              },
+              {
+                "color": "dark-red",
+                "value": 1
               }
             ]
           },
@@ -432,7 +446,7 @@
           "datasource": {
             "type": "influxdb"
           },
-          "query": "from(bucket: \"api-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"api_request\")\n  |> filter(fn: (r) => r._field == \"duration\")\n  |> aggregateWindow(every: 1m, fn: mean, createEmpty: false)",
+          "query": "from(bucket: \"api-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"api_request\")\n  |> filter(fn: (r) => r._field == \"duration\")\n  |> aggregateWindow(every: 1m, fn: mean, createEmpty: false)\n  |> set(key: \"stat\", value: \"mean\")\n  |> keep(columns: [\"_time\", \"_value\", \"stat\", \"method\", \"route\", \"hostname\"])\n  |> group(columns: [\"stat\", \"method\", \"route\", \"hostname\"])\n  |> yield(name: \"mean\")",
           "refId": "mean"
         },
         {
@@ -440,7 +454,7 @@
             "type": "influxdb"
           },
           "hide": false,
-          "query": "from(bucket: \"api-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"api_request\")\n  |> filter(fn: (r) => r._field == \"duration\")\n  |> aggregateWindow(\n      every: 1m,\n      fn: (tables=<-, column) => tables |> quantile(column: column, q: 0.95),\n      createEmpty: false\n    )",
+          "query": "from(bucket: \"api-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"api_request\")\n  |> filter(fn: (r) => r._field == \"duration\")\n  |> aggregateWindow(\n      every: 1m,\n      fn: (tables=<-, column) => tables |> quantile(column: column, q: 0.95),\n      createEmpty: false\n    )\n    |> set(key: \"stat\", value: \"p95\")\n    |> keep(columns: [\"_time\", \"_value\", \"stat\", \"method\", \"route\", \"hostname\"])\n    |> group(columns: [\"stat\", \"method\", \"route\", \"hostname\"])\n    |> yield(name: \"p95\")",
           "refId": "p95"
         },
         {
@@ -448,7 +462,7 @@
             "type": "influxdb"
           },
           "hide": false,
-          "query": "from(bucket: \"api-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"api_request\")\n  |> filter(fn: (r) => r._field == \"duration\")\n  |> aggregateWindow(\n      every: 1m,\n      fn: (tables=<-, column) => tables |> quantile(column: column, q: 0.99),\n      createEmpty: false\n    )",
+          "query": "from(bucket: \"api-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"api_request\")\n  |> filter(fn: (r) => r._field == \"duration\")\n  |> aggregateWindow(\n      every: 1m,\n      fn: (tables=<-, column) => tables |> quantile(column: column, q: 0.99),\n      createEmpty: false\n    )\n    |> set(key: \"stat\", value: \"p99\")\n    |> keep(columns: [\"_time\", \"_value\", \"stat\", \"method\", \"route\", \"hostname\"])\n    |> group(columns: [\"stat\", \"method\", \"route\", \"hostname\"])\n    |> yield(name: \"p99\")",
           "refId": "p99"
         }
       ],
@@ -472,7 +486,9 @@
               "viz": false
             }
           },
-          "mappings": []
+          "displayName": "${__field.labels.hostname}",
+          "mappings": [],
+          "noValue": "N/A"
         },
         "overrides": []
       },
@@ -680,6 +696,7 @@
               "viz": false
             }
           },
+          "displayName": "${__field.labels.status_class}",
           "mappings": []
         },
         "overrides": [
@@ -1042,14 +1059,36 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
           "unit": "s"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": ["/health"],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": true
+                }
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 8,
@@ -1098,6 +1137,6 @@
   "timezone": "",
   "title": "FastAPI Metrics Dashboard",
   "uid": "fastapi-metrics",
-  "version": 2,
+  "version": 6,
   "weekStart": ""
 }
