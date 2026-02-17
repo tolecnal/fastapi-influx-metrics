@@ -6,6 +6,7 @@ from typing import Callable, Optional
 from collections import deque
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import ASYNCHRONOUS
 import logging
@@ -26,7 +27,8 @@ class MetricsMiddleware(BaseHTTPMiddleware):
 
     def __init__(
         self,
-        app,
+        app: ASGIApp,
+        metrics,
         influx_url: str,
         influx_token: str,
         influx_org: str,
@@ -37,6 +39,8 @@ class MetricsMiddleware(BaseHTTPMiddleware):
         flush_interval: float = 5.0,
     ):
         super().__init__(app)
+
+        self.metrics = metrics
         self.influx_url = influx_url
         self.influx_token = influx_token
         self.influx_org = influx_org

@@ -1,5 +1,6 @@
 import os
 import random
+import asyncio
 from fastapi import FastAPI
 from app.middleware.metrics import MetricsMiddleware
 import logging
@@ -21,9 +22,23 @@ HOSTNAME = os.getenv("HOSTNAME") or os.getenv("HOST_NAME")
 # Create FastAPI app
 app = FastAPI(title="FastAPI with InfluxDB Metrics")
 
+
+class MetricsCollector:
+    def __init__(self, max_queue_size: int):
+        self.queue = asyncio.Queue(maxsize=max_queue_size)
+
+    def queue_size(self):
+        return self.queue.qsize()
+
+
+metrics_collector = MetricsCollector(max_queue_size=10000)
+app.state.metrics = metrics_collector
+
+
 # Add metrics middleware
 app.add_middleware(
     MetricsMiddleware,
+    metrics=metrics_collector,
     influx_url=INFLUX_URL,
     influx_token=INFLUX_TOKEN,
     influx_org=INFLUX_ORG,
@@ -51,22 +66,12 @@ async def health():
 @app.get("/metrics/status")
 async def metrics_status():
     """Check metrics queue status"""
-    # Try to find the middleware instance
-    for middleware in app.user_middleware:
-        if hasattr(middleware, "kwargs"):
-            # Access the middleware instance
-            mw_instance = getattr(middleware, "cls", None)
-            if (
-                mw_instance
-                and hasattr(mw_instance, "__name__")
-                and mw_instance.__name__ == "MetricsMiddleware"
-            ):
-                return {
-                    "message": "Middleware found but can't access instance directly",
-                    "hostname": HOSTNAME,
-                }
+    metrics = app.state.metrics
 
-    return {"message": "Check logs for queue status", "hostname": HOSTNAME}
+    return {
+        "hostname": HOSTNAME,
+        "queue_size": metrics.queue_size(),
+    }
 
 
 @app.get("/api/users/{user_id}")
